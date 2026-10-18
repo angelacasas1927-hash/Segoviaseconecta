@@ -20,7 +20,11 @@
 <link rel="icon" type="image/png" sizes="256x256" href="favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png">
 <meta name="apple-mobile-web-app-title" content="Segovia">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1E3D5E">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1E3D5E">
 <title>Segovia se conecta · Ayuntamiento de Segovia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1280,8 +1284,27 @@ button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
     if (ax < 12 && ay < 12 && Date.now() - st < 400) { if (e.target.closest('button,a')) return; e.preventDefault(); return t.clientX < innerWidth * 0.33 ? prev() : next(); }
   }, { passive: false });
   function fullscreen() { var d = document.documentElement; if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen().catch(function () {}); else if (document.exitFullscreen) document.exitFullscreen(); }
-  function fit() { var w = innerWidth, h = innerHeight; deck.style.transform = 'scale(' + Math.min(w / 1600, h / 900) + ')'; document.body.classList.toggle('portrait', h > w && w < 1000); }
-  addEventListener('resize', fit); addEventListener('orientationchange', function () { setTimeout(fit, 250); });
+  function vpSize() {
+    var vv = window.visualViewport;
+    var w = Math.round((vv && vv.width) || document.documentElement.clientWidth || innerWidth);
+    var h = Math.round((vv && vv.height) || document.documentElement.clientHeight || innerHeight);
+    return [w, h];
+  }
+  function fit() {
+    var d = vpSize(), w = d[0], h = d[1];
+    if (!w || !h) return;
+    deck.style.transform = 'scale(' + Math.min(w / 1600, h / 900) + ')';
+    document.body.classList.toggle('portrait', h > w && w < 1000);
+  }
+  function refit() { fit(); requestAnimationFrame(fit); [60, 180, 400, 800, 1400].forEach(function (t) { setTimeout(fit, t); }); }
+  addEventListener('resize', refit);
+  addEventListener('orientationchange', refit);
+  addEventListener('pageshow', refit);
+  addEventListener('focus', refit);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refit(); });
+  if (window.visualViewport) { visualViewport.addEventListener('resize', fit); visualViewport.addEventListener('scroll', fit); }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+  addEventListener('load', refit);
   document.getElementById('forcePortrait').addEventListener('click', function () { document.body.classList.add('force'); });
   function fromHash() {
     var m = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash); if (!m) return false;
